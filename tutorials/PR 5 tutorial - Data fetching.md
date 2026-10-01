@@ -1,15 +1,29 @@
 # Data fetching with clientLoader - Step-by-step tutorial
 
-## 📋 Table of contents
+## 🎯 Learning objectives
+
+By the end of this tutorial, you will be able to:
+
+- **Load data before a screen renders** with a `clientLoader`, and read it with `useLoaderData()`
+- **Replace `useState` with a loader** for data that comes from outside the component
+- **Decide which route loads which data**: the layout (shared by every page) or the page itself
+- **Highlight the active link** in a list with `NavLink`
+
+## 📋 Prerequisites
+
+- **[PR #4](../pull/4) completed**: routes for `/chat/new` and `/chat/:threadId`
+- **`async`/`await`** basics: an `async` function can `await` a promise
+
+## 📑 Table of contents
 
 1. [Introduce clientLoader for data fetching in chat threads](#step-1)
 2. [Load thread list via clientLoader in layout route](#step-2)
 3. [Use NavLink to highlight active thread in sidebar](#step-3)
-4. [Add pending state animation to thread links](#step-4)
+4. [⭐ Extra: Add pending state animation to thread links](#step-4)
 
 ## 🗺️ Overview
 
-This tutorial introduces React Router v7's data loading pattern, a fundamental shift from traditional React state management for data fetching. Instead of using `useState` and `useEffect` to fetch data after a component renders, we'll use `clientLoader` functions to fetch data _before_ rendering.
+Until now, the chatbot's data has lived in `useState`, with hardcoded starting values inside the component files. Real data lives in a database, and fetching it takes time. React Router gives every route a place to fetch its data _before_ the screen renders: a `clientLoader` function. In this tutorial you'll move the data out of `useState` and into loaders — still with mock data for now. The next tutorial swaps the mock data for a real database.
 
 You'll learn how to:
 
@@ -29,6 +43,17 @@ npx degit --force bewildergeist/chatbot-react-postgres#pr-5-start
 ```
 
 **Important**: Make a commit of this initial version before you start changing anything.
+
+### Where the code lives
+
+All paths are inside `frontend/`:
+
+| File | What happens to it |
+| --- | --- |
+| `app/routes/chat-thread.jsx` | Gets a `clientLoader` that returns the thread's messages |
+| `app/routes/layout.jsx` | Gets a `clientLoader` that returns the thread list |
+| `app/components/Sidebar.jsx` | `Link` becomes `NavLink`, to highlight the active thread |
+| `app/app.css` | Styles for the active (and, in step 4, pending) link |
 
 ---
 
@@ -58,7 +83,7 @@ Currently, the chat thread component uses `useState` to manage messages data loc
 
 **useLoaderData hook:**
 
-- Provides type-safe access to data returned from `clientLoader`
+- Gives the component whatever `clientLoader` returned
 - Data is guaranteed to be available when the component renders
 - Eliminates the need for loading states within the component
 
@@ -124,7 +149,7 @@ const { threadId, messages } = useLoaderData();
 
 ### 💬 Discussion points
 
-1. **Why is data loading separated from the component?** What advantages does this provide compared to using `useEffect` to fetch data after rendering?
+1. **Why is data loading separated from the component?** What's the advantage compared to keeping the data in `useState` inside the component, as you did in PR #3?
 
 2. **What happens during the time between clicking a link and the loader completing?** How does the user experience change?
 
@@ -167,10 +192,9 @@ Additionally, you need to understand **parent route loaders** - how do loaders w
 
 **Parent route loaders:**
 
-- Parent loaders run _before_ child route loaders
-- Data from parent loaders is available to the parent component via `useLoaderData()`
-- Child routes can access parent loader data using `useRouteLoaderData(routeId)`
-- This creates a data loading waterfall: parent loads → parent renders → child loads → child renders
+- When you open `/chat/3`, both the layout's loader and the chat thread's loader are needed
+- React Router starts them **at the same time** (in parallel), and renders the page once both have finished
+- Data from the layout's loader is available to the layout component via `useLoaderData()`
 
 **Shared layout data:**
 
@@ -220,14 +244,13 @@ Database IDs are typically strings (UUIDs or similar). Converting now prepares t
 <details>
 <summary>What's the loading sequence?</summary>
 
-When navigating to `/chat/3`:
+When you open `/chat/3` directly (or refresh the page):
 
-1. Layout loader runs (300ms delay)
-2. Layout component renders with thread list
-3. Chat thread loader runs (500ms delay)
-4. Chat thread component renders with messages
+1. The layout loader (300ms) and the chat thread loader (500ms) **start at the same time**
+2. The layout loader finishes after 300ms, the chat thread loader after 500ms
+3. React Router renders the layout and the chat thread together
 
-Total wait time: 800ms
+Total wait time: 500ms — the slowest loader, not the sum of both.
 
 </details>
 
@@ -235,14 +258,14 @@ Total wait time: 800ms
 
 1. **What's the advantage of loading thread data in the layout?** Why not load it in each child route that needs it?
 
-2. **How does the loading waterfall affect user experience?** Is the 800ms total wait time a problem? What are the tradeoffs?
+2. **One after the other, or at the same time?** Add a `console.log` at the start and at the end of both loaders, and refresh the page. In which order do the four messages appear? What does that mean for how long the user waits?
 
 ### 🧪 Test your solution
 
 - Navigate to the chat app and observe the sidebar loading
-- Add a `console.log` in both loaders to see the execution order
+- Add a `console.log` at the start and end of both loaders to see when they run
 - Try navigating between threads - the layout loader should NOT run again (only the child loader runs)
-- Refresh the page - both loaders should run in sequence
+- Refresh the page - both loaders should run, at the same time
 - Check that thread IDs are strings (you'll see them in the URL)
 
 ### ✅ Reference implementation
@@ -384,7 +407,9 @@ Review the commit to see:
 
 <a name="step-4"></a>
 
-## Step 4: Add pending state animation to thread links
+## ⭐ Extra — Step 4: Add pending state animation to thread links
+
+> This step is optional polish. Do it if you have time — the next tutorials don't depend on it.
 
 ### 🤔 Problem to solve
 

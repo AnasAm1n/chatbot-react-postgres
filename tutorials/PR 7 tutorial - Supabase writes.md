@@ -1,12 +1,26 @@
 # Data Mutations with React Router - Step-by-Step Tutorial
 
-## 📋 Table of Contents
+## 🎯 Learning objectives
+
+By the end of this tutorial, you will be able to:
+
+- **Save data** with React Router's `<Form>` and a `clientAction`
+- **Explain automatic revalidation**: why the screen updates itself after a form is submitted
+- **Validate input** and show error messages with `useActionData()`
+- **Create a record and navigate to it** with `redirect()`
+- Going further: **delete without navigating** with `useFetcher`, and **handle errors** with an `ErrorBoundary`
+
+## 📋 Prerequisites
+
+- **[PR #6](../pull/6) completed**: the app reads threads and messages from your Supabase database
+
+## 📑 Table of contents
 
 1. [Create new messages with clientAction](#step-1)
 2. [Add error handling and validation](#step-2)
 3. [Create new threads with redirect](#step-3)
-4. [Delete threads with useFetcher](#step-4)
-5. [Handle errors with ErrorBoundary](#step-5)
+4. [⭐ Going further: Delete threads with useFetcher](#step-4)
+5. [⭐ Going further: Handle errors with ErrorBoundary](#step-5)
 
 ## 🗺️ Overview
 
@@ -21,7 +35,7 @@ By the end of this tutorial, you'll understand:
 - Non-navigating mutations with `useFetcher`
 - React Router's ErrorBoundary for graceful error handling
 
-**Prerequisites**: You should have completed the previous tutorials on React Router data loading and have a working chat application that reads from Supabase.
+Steps 1–3 are the core: reading, creating and navigating. Steps 4–5 go further, for when you've finished the core steps.
 
 ## 🧑‍💻 Today's starting point
 
@@ -32,6 +46,19 @@ npx degit --force bewildergeist/chatbot-react-postgres#pr-7-start
 ```
 
 **Important**: Make a commit of this initial version before you start changing anything.
+
+### Where the code lives
+
+All paths are inside `frontend/`:
+
+| File | What happens to it |
+| --- | --- |
+| `app/components/Chat.jsx` | `ChatInput` swaps `<form onSubmit>` for React Router's `<Form>` |
+| `app/routes/chat-thread.jsx` | Gets a `clientAction` that saves new messages |
+| `app/routes/chat-new.jsx` | Gets a `clientAction` that creates a thread and redirects to it |
+| `app/routes/layout.jsx` | Step 4: gets a `clientAction` that deletes threads |
+| `app/components/Sidebar.jsx` | Step 4: the delete button uses `useFetcher` |
+| `app/app.css` | Styles for error messages |
 
 ---
 
@@ -90,7 +117,7 @@ const fieldValue = formData.get("fieldName");
 
 - Send JSON in the request body
 - Include Supabase authentication headers (`apikey` and `Authorization`)
-- Use the `Prefer: return=representation` header if you need the created resource back
+- Include `"Content-Type": "application/json"`, so Supabase knows the body is JSON
 
 **Form component**:
 
@@ -109,7 +136,7 @@ This commit shows one way to implement message creation using `clientAction` and
 
 1. **Why does the message list update automatically after submission?** Consider the relationship between `clientAction` and `clientLoader`.
 
-2. **What are the advantages of using `Form` instead of handling `onSubmit` manually?** Think about loading states, error handling, and code complexity.
+2. **Compare with the `handleSubmit` function you wrote in PR #3.** Which of its lines does `<Form>` + `clientAction` make unnecessary? Where did the `useState` and the `onAddMessage` callback go?
 
 3. **Where does the form data come from?** Trace the flow from the user typing in the textarea to the data appearing in `clientAction`.
 
@@ -273,10 +300,14 @@ Implement thread creation in the `/chat/new` route:
 **Creating dependent resources**:
 
 ```javascript
-// Step 1: Create parent resource
+// Step 1: Create parent resource — and ask Supabase to send it back
 const response1 = await fetch(url1, {
-  ...options,
-  Prefer: "return=representation",
+  method: "POST",
+  headers: {
+    // ...apikey, Authorization and Content-Type as usual
+    Prefer: "return=representation",
+  },
+  body: JSON.stringify(parentData),
 });
 const [created] = await response1.json(); // Returns array with one item
 
@@ -329,7 +360,9 @@ This commit shows how to implement multi-step mutations with sequential API call
 
 <a name="step-4"></a>
 
-## Step 4: Delete threads with useFetcher
+## ⭐ Going further — Step 4: Delete threads with useFetcher
+
+> Steps 4 and 5 go beyond the core of this tutorial. Do them when you've finished steps 1–3.
 
 ### 🤔 Problem to solve
 
@@ -438,11 +471,7 @@ This commit demonstrates non-navigating mutations with `useFetcher`, the intent 
 
 1. **Why use `useFetcher` instead of a regular `Form`?** What would happen if you used a regular Form for deletion?
 
-2. **What is "optimistic UI"?** How could you make the deletion feel even faster by removing the thread from the list before the API call completes?
-
-3. **Why is the action in `layout.jsx` and not in `Sidebar.jsx`?** Consider where data loaders and actions must be defined in React Router.
-
-4. **What happens to the thread's messages when you delete a thread?** Check your database schema for CASCADE DELETE settings.
+2. **Why is the action in `layout.jsx` and not in `Sidebar.jsx`?** Consider where data loaders and actions must be defined in React Router.
 
 ### 🧪 Test your solution
 
@@ -457,7 +486,7 @@ This commit demonstrates non-navigating mutations with `useFetcher`, the intent 
 
 <a name="step-5"></a>
 
-## Step 5: Handle errors with ErrorBoundary
+## ⭐ Going further — Step 5: Handle errors with ErrorBoundary
 
 ### 🤔 Problem to solve
 
@@ -542,11 +571,7 @@ This commit shows how to implement ErrorBoundary for graceful error handling.
 
 1. **Why throw an error in the loader rather than returning an error object?** Consider the difference between expected validation errors and unexpected failures.
 
-2. **What's the benefit of checking `error.status` for specific handling?** How might you handle 403 (Forbidden) or 500 (Server Error) differently?
-
-3. **Where else in the app could you add ErrorBoundaries?** Consider the layout route, the home route, etc.
-
-4. **What happens to the sidebar when the ErrorBoundary renders?** Why does the rest of the app keep working?
+2. **What happens to the sidebar when the ErrorBoundary renders?** Why does the rest of the app keep working?
 
 ### 🧪 Test your solution
 

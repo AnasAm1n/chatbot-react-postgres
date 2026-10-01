@@ -1,6 +1,20 @@
 # Dynamic routing with React Router v7 - Step-by-step tutorial
 
-## 📋 Table of Contents
+## 🎯 Learning objectives
+
+By the end of this tutorial, you will be able to:
+
+- **Define routes** in `routes.js`, including a dynamic route with a URL parameter like `:threadId`
+- **Navigate without page reloads** using React Router's `Link` component
+- **Read URL parameters** in a component with the `useParams()` hook
+- **Explain the difference** between client-side navigation and a full page reload
+
+## 📋 Prerequisites
+
+- **[PR #3](../pull/3) completed**: state, events and a working chat form
+- **Template strings** in JavaScript, e.g. `` `/chat/${id}` ``
+
+## 📑 Table of contents
 
 1. [Add dynamic routes for chat threads and new chat](#step-1)
 2. [Use useParams hook to access threadId from URL](#step-2)
@@ -29,6 +43,18 @@ npx degit --force bewildergeist/chatbot-react-postgres#pr-4-start
 
 **Important**: Make a commit of this initial version before you start changing anything.
 
+### Where the code lives
+
+All paths are inside `frontend/`:
+
+| File | What happens to it |
+| --- | --- |
+| `app/routes.js` | Two new routes: `/chat/new` and `/chat/:threadId` |
+| `app/routes/chat-new.jsx` | New file: the "start a new conversation" screen |
+| `app/routes/chat-thread.jsx` | New file: the screen for one conversation |
+| `app/components/Sidebar.jsx` | `<a>` tags become `<Link>` components |
+| `app/routes/layout.jsx` | The hardcoded `href` is removed from each thread |
+
 ---
 
 <a name="step-1"></a>
@@ -50,7 +76,7 @@ Without proper routing, there's no way to navigate between different views or re
 **Dynamic routes** use URL parameters (like `:threadId`) to match multiple URLs with a single route definition:
 
 - `/chat/1`, `/chat/2`, `/chat/999` all match the pattern `/chat/:threadId`
-- The value after `/chat/` becomes available to your component as a parameter (much like you're used to from Express routes)
+- The value after `/chat/` becomes available to your component as a parameter (if you've written Express routes, it's the same idea)
 
 **Client-side navigation** uses React Router's `Link` component:
 
@@ -63,6 +89,8 @@ Without proper routing, there's no way to navigate between different views or re
 ```javascript
 href("/chat/:threadId", { threadId: 5 }); // Returns: "/chat/5"
 ```
+
+A template string gives the same result: `` `/chat/${thread.id}` ``. The advantage of `href()` is that it builds the URL from the route pattern, so a typo in the pattern shows up as an error instead of a broken link.
 
 ### 📝 Your task
 
@@ -295,9 +323,7 @@ This commit demonstrates:
 
 1. **String vs number types**: URL parameters are always strings. If you need to use the `threadId` to fetch data from an API or database, do you need to convert it to a number? Why or why not?
 
-2. **Shared state problem**: Notice the comment in the code about messages being "shared among all threads". Why is this happening? What React concept explains this behavior? (Hint: Think about component lifecycle and state initialization.)
-
-3. **Future data loading**: Right now, we're just displaying the thread ID. In a real application, you'd use this ID to fetch the correct messages from a database. What would be the next steps to implement that?
+2. **Shared state problem**: Notice the comment in the code about messages being "shared among all threads". Why is this happening? (Hint: `/chat/1` and `/chat/2` render the *same* component. Does React create a new one when only the URL parameter changes?)
 
 ### 🧪 Test your solution
 

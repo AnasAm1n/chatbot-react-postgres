@@ -1,6 +1,20 @@
 # Supabase integration: Database setup and data fetching - Step-by-step tutorial
 
-## 📋 Table of contents
+## 🎯 Learning objectives
+
+By the end of this tutorial, you will be able to:
+
+- **Set up a database** in Supabase with two related tables and some test data
+- **Explain** tables, columns, primary keys and foreign keys
+- **Fetch data** from Supabase's REST API with `fetch`, using filters and sorting
+- **Keep keys out of your code** with environment variables
+
+## 📋 Prerequisites
+
+- **[PR #5](../pull/5) completed** (steps 1–3): a `clientLoader` in `layout.jsx` and in `chat-thread.jsx`
+- **`fetch`** basics: sending a request and reading the JSON response
+
+## 📑 Table of contents
 
 1. [Set up Supabase database with schema and seed data](#step-1)
 2. [Fetch thread list from Supabase REST API](#step-2)
@@ -18,6 +32,8 @@ In this tutorial, you'll learn how to integrate Supabase—a powerful, open-sour
 - Learn REST API concepts: endpoints, query parameters, headers, and filtering
 - Handle asynchronous data loading in React Router loaders
 
+Step 1 is setup work that doesn't touch your React code, so you can do it on its own, ahead of steps 2–3.
+
 ## 🧑‍💻 Today's starting point
 
 If you haven't fully completed the prior tutorials, you may copy the starting point of this tutorial by running this command in the root of your local repository:
@@ -27,6 +43,16 @@ npx degit --force bewildergeist/chatbot-react-postgres#pr-6-start
 ```
 
 **Important**: Make a commit of this initial version before you start changing anything.
+
+### Where the code lives
+
+| File | What happens to it |
+| --- | --- |
+| `supabase/README.md`, `schema.sql`, `seed.sql` | New: setup instructions and SQL scripts for your database |
+| `frontend/.env.example` | New: a template for your Supabase URL and key |
+| `frontend/.gitignore` | `.env` is added, so your keys never get committed |
+| `frontend/app/routes/layout.jsx` | The loader fetches the thread list from Supabase |
+| `frontend/app/routes/chat-thread.jsx` | The loader fetches one thread and its messages |
 
 ---
 
@@ -87,6 +113,8 @@ The README will guide you through:
 
 Take your time to read through each section carefully and complete all the steps in order.
 
+> ⚠️ **Before you create `frontend/.env`**, add `.env` to `frontend/.gitignore` (the reference commit shows how). Otherwise your keys end up on GitHub with your next commit.
+
 ### ✅ Reference implementation
 
 **🔗 Commit**: [`67d2766`](6/commits/67d2766e80afa305412db93ac014d0f26f294a7f)
@@ -103,18 +131,11 @@ This commit includes:
 
 ### 💬 Discussion points
 
-1. **Why use UUIDs instead of auto-incrementing integers for IDs?**
-
-   - Think about distributed systems, security, and predictability
+1. **Objects and relationships:** `threads` and `messages` are two kinds of object, and `thread_id` connects them. If you've done an object breakdown (e.g. ORCA) of your own app, how do its objects, attributes and relationships map onto tables, columns and foreign keys?
 
 2. **What's the benefit of `ON DELETE CASCADE`?**
 
-   - What happens to orphaned messages if you don't use it?
-   - Are there scenarios where you wouldn't want cascade deletes?
-
-3. **What's the purpose of the index on `thread_id`?**
-   - How does it affect query performance?
-   - Are there any downsides to indexes?
+   - What happens to a thread's messages when the thread is deleted — with and without it?
 
 ### 🧪 Test your solution
 
@@ -440,17 +461,7 @@ This commit shows:
    - Wouldn't a single object be more convenient?
    - What's the benefit of consistent array responses?
 
-2. **Is it efficient to make two separate API calls?**
-
-   - Could you get the thread and messages in one request?
-   - Look up "Supabase embedded resources" or "PostgREST resource embedding"
-
-3. **What happens if you order messages with `desc` instead of `asc`?**
-
-   - Try it and see how the conversation reads
-   - When might descending order be useful?
-
-4. **Why throw a `Response` object instead of a regular `Error`?**
+2. **Why throw a `Response` object instead of a regular `Error`?**
    - What's special about the `Response` object?
    - How does React Router handle each differently?
 
