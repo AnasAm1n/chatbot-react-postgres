@@ -107,6 +107,11 @@ export async function clientAction({ request }) {
  * 4. OUTLET: Renders the matched child route component
  * 5. NO DELETE CALLBACK: Sidebar handles deletion with useFetcher
  */
+function Sidebar () {
+  <aside className="sidebar">…</aside>
+}
+
+
 export default function Layout() {
   // Access threads data from the loader
   const { threads } = useLoaderData();
