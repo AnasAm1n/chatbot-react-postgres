@@ -95,23 +95,6 @@ export async function clientAction({ request }) {
   return null;
 }
 
-/**
- * Layout Component
- *
- * Now uses DATA LOADING and MUTATIONS!
- *
- * Key concepts:
- * 1. useLoaderData() HOOK: Accesses data from clientLoader
- * 2. NO STATE MANAGEMENT: Data comes from loader, not useState
- * 3. LAYOUT PATTERN: Wraps child routes with consistent UI (sidebar)
- * 4. OUTLET: Renders the matched child route component
- * 5. NO DELETE CALLBACK: Sidebar handles deletion with useFetcher
- */
-function Sidebar () {
-  <aside className="sidebar">…</aside>
-}
-
-
 export default function Layout() {
   // Access threads data from the loader
   const { threads } = useLoaderData();
