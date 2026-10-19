@@ -20,13 +20,6 @@ Install the dependencies:
 npm install
 ```
 
-### Environment Variables
-
-Copy `.env.example` to `.env` and set the Supabase project URL and anonymous key.
-Set `VITE_API_URL` to the URL of the backend API (for local development,
-`http://localhost:3000`). Start the backend from the `backend` directory before
-using the chat features.
-
 ### Development
 
 Start the development server with HMR:
