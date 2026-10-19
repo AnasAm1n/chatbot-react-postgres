@@ -1,23 +1,25 @@
 import { useActionData, redirect } from "react-router";
 import { ChatInput, ChatMessages } from "../components/Chat.jsx";
-import { apiFetch } from "../lib/apiFetch.js";
 
 /**
  * CLIENT ACTION FUNCTION
  *
  * Handles creation of new chat threads with their first message.
  * Key concepts:
- * 1. COMPOUND OPERATION: Single API call creates both thread and message
- * 2. REDIRECT: Navigate to new thread after successful creation
- * 3. TITLE GENERATION: Create thread title from first message
- * 4. ERROR HANDLING: Validate input and handle API errors
- * 5. AUTHENTICATED REQUESTS: Uses apiFetch to include JWT token
+ * 1. MULTIPLE MUTATIONS: Creates both thread and first message
+ * 2. SEQUENTIAL OPERATIONS: Thread must be created before message
+ * 3. REDIRECT: Navigate to new thread after successful creation
+ * 4. TITLE GENERATION: Create thread title from first message
+ * 5. ERROR HANDLING: Validate input and handle API errors
  *
  * The action runs:
  * - When a Form with method="post" is submitted
  * - Returns a redirect to navigate to the new thread
  */
 export async function clientAction({ request }) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
   // Extract form data
   const formData = await request.formData();
   const content = formData.get("message");
@@ -34,36 +36,46 @@ export async function clientAction({ request }) {
       : content.trim();
 
   try {
-    // Create the thread with its first message in a single request
-    // Our custom API handles both operations as a compound mutation
-    // apiFetch automatically includes the JWT token and handles the base URL
-    const response = await apiFetch("/api/threads", {
+    // Step 1: Create the thread
+    const threadResponse = await fetch(`${supabaseUrl}/rest/v1/threads`, {
       method: "POST",
       headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation", // Need the created thread's ID
+      },
+      body: JSON.stringify({ title }),
+    });
+
+    if (!threadResponse.ok) {
+      return { error: `Failed to create thread: ${threadResponse.status}` };
+    }
+
+    // Get the created thread (returns array with one item)
+    const [thread] = await threadResponse.json();
+
+    // Step 2: Create the first message in the new thread
+    const messageResponse = await fetch(`${supabaseUrl}/rest/v1/messages`, {
+      method: "POST",
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        title: title,
+        thread_id: thread.id,
+        type: "user",
         content: content.trim(),
       }),
     });
 
-    // Check for validation errors (400)
-    if (response.status === 400) {
-      const error = await response.json();
-      return { error: error.error || "Invalid thread data" };
+    if (!messageResponse.ok) {
+      return { error: `Failed to create message: ${messageResponse.status}` };
     }
 
-    // Check for other errors
-    if (!response.ok) {
-      return { error: `Failed to create thread: ${response.status}` };
-    }
-
-    // Get the created thread data
-    const data = await response.json();
-
-    // Redirect to the new thread
-    return redirect(`/chat/${data.thread.id}`);
+    // Step 3: Redirect to the new thread
+    return redirect(`/chat/${thread.id}`);
   } catch (error) {
     return { error: error.message };
   }

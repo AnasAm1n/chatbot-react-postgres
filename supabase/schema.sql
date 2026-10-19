@@ -3,7 +3,6 @@
 CREATE TABLE threads (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   title text NOT NULL,
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at timestamptz DEFAULT now()
 );
 
@@ -19,7 +18,3 @@ CREATE TABLE messages (
 
 -- Create index for faster queries on thread_id
 CREATE INDEX messages_thread_id_idx ON messages(thread_id);
-
--- Create index for faster queries on user_id
--- This improves performance when filtering threads by owner
-CREATE INDEX threads_user_id_idx ON threads(user_id);

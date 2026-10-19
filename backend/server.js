@@ -153,7 +153,7 @@ app.get("/api/threads", requireAuth, async (req, res) => {
     // WHERE clause filters to only threads owned by the authenticated user
     // This is the core of authorization - filtering data by ownership
     const threads = await sql`
-      SELECT id, title, user_id, created_at 
+      SELECT id, title, created_at
       FROM threads 
       WHERE user_id = ${req.userId}
       ORDER BY created_at DESC
