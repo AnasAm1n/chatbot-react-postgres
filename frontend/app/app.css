@@ -1,6 +1,6 @@
 /* CSS Variables */
 :root {
-  --white-100: #ffffff;
+  --bg-primary: #ffffff;
   --bg-secondary: #f9f9f9;
   --bg-hover: #f0f0f0;
   --bg-message-user: #f1f3f5;
@@ -9,7 +9,7 @@
   --bg-button-primary-hover: #374151;
   --bg-button-disabled: #d1d5db;
 
-  --text-black: #0d0d0d;
+  --text-primary: #0d0d0d;
   --text-muted: #9ca3af;
   --text-button: #ffffff;
 
@@ -18,10 +18,6 @@
   --border-focus: #6b7280;
 
   --shadow-focus: rgba(107, 114, 128, 0.1);
-}
-
-.app {
-  --text-primary: var(--text-black);
 }
 
 /* Reset and base styles */

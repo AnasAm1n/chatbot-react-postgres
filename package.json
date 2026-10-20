@@ -1,0 +1,8 @@
+{
+  "name": "chatbot-react-postgres",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
+}
