@@ -4,13 +4,12 @@ import Sidebar from "../components/Sidebar.jsx";
 /**
  * CLIENT LOADER FUNCTION
  *
- * Fetches the list of chat threads from Supabase before the layout renders.
+ * Fetches the list of chat threads from our custom API before the layout renders.
  * Key concepts:
  * 1. PARENT ROUTE LOADER: Runs before any child route loaders
  * 2. SHARED DATA: Data is available to this component and can be accessed by children
- * 3. SUPABASE REST API: Direct HTTP calls to Supabase database
- * 4. ENVIRONMENT VARIABLES: Secure way to store API credentials
- * 5. QUERY PARAMETERS: Using URL parameters to filter and sort data
+ * 3. CUSTOM API: Direct HTTP calls to our Express API server
+ * 4. ENVIRONMENT VARIABLES: Secure way to store API endpoint URLs
  *
  * This loader runs:
  * - On initial page load
@@ -18,23 +17,16 @@ import Sidebar from "../components/Sidebar.jsx";
  * - When React Router revalidates (after mutations)
  */
 export async function clientLoader() {
-  // Get Supabase credentials from environment variables
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  // Get our API URL from environment variables
+  const apiUrl = import.meta.env.VITE_API_URL;
 
   // Construct the API endpoint URL
-  // - /rest/v1/threads: Access the threads table
-  // - select=*: Get all columns
-  // - order=created_at.desc: Sort by newest first
-  const url = `${supabaseUrl}/rest/v1/threads?select=*&order=created_at.desc`;
+  // Our custom API handles sorting internally (ORDER BY created_at DESC)
+  const url = `${apiUrl}/api/threads`;
 
-  // Make the request with required Supabase headers
-  const response = await fetch(url, {
-    headers: {
-      apikey: supabaseKey, // Required for authentication
-      Authorization: `Bearer ${supabaseKey}`, // Required for authorization
-    },
-  });
+  // Make the request to our custom API
+  // No special headers needed - our API is public for now
+  const response = await fetch(url);
 
   // Check if the request was successful
   if (!response.ok) {
