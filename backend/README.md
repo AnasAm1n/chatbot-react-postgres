@@ -18,8 +18,11 @@ Edit `backend/.env` and add your Supabase database connection string:
 
 ```env
 DATABASE_URL=postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+GROQ_API_KEY=your-groq-api-key
 PORT=3000
 ```
+
+Create a Groq API key in the Groq Console and set it as `GROQ_API_KEY`. The backend uses it to generate a response after saving each submitted message.
 
 To find your DATABASE_URL:
 
@@ -134,7 +137,7 @@ Fetches all messages for a specific thread, ordered chronologically (oldest firs
 
 ### POST /api/threads/:id/messages
 
-Creates a new message in a thread.
+Creates a new message in a thread, then generates and saves an AI response using the conversation history.
 
 **URL Parameters:**
 
@@ -158,13 +161,24 @@ Creates a new message in a thread.
 
 ```json
 {
-  "id": "789e4567-e89b-12d3-a456-426614174000",
-  "thread_id": "123e4567-e89b-12d3-a456-426614174000",
-  "type": "user",
-  "content": "This is my message",
-  "created_at": "2025-10-13T10:35:00Z"
+  "userMessage": {
+    "id": "789e4567-e89b-12d3-a456-426614174000",
+    "thread_id": "123e4567-e89b-12d3-a456-426614174000",
+    "type": "user",
+    "content": "This is my message",
+    "created_at": "2025-10-13T10:35:00Z"
+  },
+  "botMessage": {
+    "id": "891e4567-e89b-12d3-a456-426614174000",
+    "thread_id": "123e4567-e89b-12d3-a456-426614174000",
+    "type": "bot",
+    "content": "AI-generated response",
+    "created_at": "2025-10-13T10:35:02Z"
+  }
 }
 ```
+
+If conversation-history retrieval, Groq generation, or bot-message persistence fails, the user's message is still saved and returned with `"botMessage": null` and `"error": "AI response unavailable"`.
 
 **Response (400 Bad Request):**
 
