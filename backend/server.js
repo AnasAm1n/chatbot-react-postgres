@@ -189,10 +189,10 @@ app.get("/api/threads/:id/messages", async (req, res) => {
 app.post("/api/threads/:id/messages", async (req, res) => {
   try {
     const threadId = req.params.id;
-    const { type, content } = req.body ?? {};
+    const { type, content } = req.body;
 
     // Validate required fields
-    if (!type || typeof content !== "string" || !content) {
+    if (!type || !content) {
       return res.status(400).json({
         error: "Both 'type' and 'content' are required",
       });
@@ -213,74 +213,16 @@ app.post("/api/threads/:id/messages", async (req, res) => {
       });
     }
 
-    // Save the user's message before requesting an AI response so it is never lost
-    // if the external service is unavailable.
-    const insertedMessages = await sql`
+    // Insert the new message
+    // RETURNING * gives us back the inserted row (including generated id and created_at)
+    const messages = await sql`
       INSERT INTO messages (thread_id, type, content)
       VALUES (${threadId}, ${type}, ${trimmedContent})
       RETURNING id, thread_id, type, content, created_at
     `;
-    const userMessage = insertedMessages[0];
 
-    let botMessage = null;
-
-    try {
-      const conversation = await sql`
-        SELECT type, content
-        FROM messages
-        WHERE thread_id = ${threadId}
-        ORDER BY created_at ASC
-      `;
-
-      const groqMessages = conversation.map((message) => ({
-        role: message.type === "bot" ? "assistant" : "user",
-        content: message.content,
-      }));
-
-      if (!process.env.GROQ_API_KEY) {
-        throw new Error("GROQ_API_KEY environment variable is not set");
-      }
-
-      const groqResponse = await fetch(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: groqMessages,
-          }),
-        }
-      );
-
-      if (!groqResponse.ok) {
-        throw new Error(`Groq API request failed (${groqResponse.status})`);
-      }
-
-      const groqData = await groqResponse.json();
-      const botContent = groqData.choices?.[0]?.message?.content;
-      if (typeof botContent !== "string" || botContent.trim().length === 0) {
-        throw new Error("Groq API returned an empty response");
-      }
-
-      const insertedBotMessages = await sql`
-        INSERT INTO messages (thread_id, type, content)
-        VALUES (${threadId}, 'bot', ${botContent.trim()})
-        RETURNING id, thread_id, type, content, created_at
-      `;
-      botMessage = insertedBotMessages[0];
-    } catch (error) {
-      console.error("Error generating bot response:", error);
-    }
-
-    res.status(201).json({
-      userMessage,
-      botMessage,
-      ...(botMessage ? {} : { error: "AI response unavailable" }),
-    });
+    // Return the created message with 201 Created status
+    res.status(201).json(messages[0]);
   } catch (error) {
     console.error("Error creating message:", error);
     res.status(500).json({
