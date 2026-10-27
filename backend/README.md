@@ -190,6 +190,38 @@ or
 }
 ```
 
+### DELETE /api/threads/:id
+
+Permanently deletes a thread. The database's `ON DELETE CASCADE` constraint also deletes all messages associated with the thread. This is a hard delete, and the data cannot be recovered.
+
+**URL Parameters:**
+
+- `id` - The UUID of the thread
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Thread deleted successfully"
+}
+```
+
+**Response (404 Not Found):**
+
+```json
+{
+  "error": "Thread not found"
+}
+```
+
+**Response (500 Internal Server Error):**
+
+```json
+{
+  "error": "Failed to delete thread"
+}
+```
+
 ## Testing
 
 ### Test with curl
@@ -221,6 +253,12 @@ curl -X POST http://localhost:3000/api/threads/123e4567-e89b-12d3-a456-426614174
 curl -X POST http://localhost:3000/api/threads/123e4567-e89b-12d3-a456-426614174000/messages \
   -H "Content-Type: application/json" \
   -d '{"type":"admin","content":"This should fail"}'
+
+# Permanently delete a thread and its messages (replace with an actual UUID)
+curl -X DELETE http://localhost:3000/api/threads/123e4567-e89b-12d3-a456-426614174000
+
+# Test the not-found response safely with a UUID that should not exist
+curl -X DELETE http://localhost:3000/api/threads/00000000-0000-0000-0000-000000000000
 ```
 
 ### Test with Browser

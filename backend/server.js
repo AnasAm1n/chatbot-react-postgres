@@ -125,6 +125,37 @@ app.get("/api/threads/:id", async (req, res) => {
 });
 
 /**
+ * DELETE /api/threads/:id
+ *
+ * Permanently deletes a thread and its associated messages.
+ */
+app.delete("/api/threads/:id", async (req, res) => {
+  try {
+    const threadId = req.params.id;
+    const threads = await sql`
+      DELETE FROM threads
+      WHERE id = ${threadId}
+      RETURNING id
+    `;
+
+    if (threads.length === 0) {
+      return res.status(404).json({
+        error: "Thread not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Thread deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting thread:", error);
+    res.status(500).json({
+      error: "Failed to delete thread",
+    });
+  }
+});
+
+/**
  * GET /api/threads/:id/messages
  *
  * Fetches all messages for a specific thread, ordered chronologically.
