@@ -1,5 +1,6 @@
-import React from "react";
-import { href, Link, NavLink, useFetcher } from "react-router";
+import { useEffect, useState } from "react";
+import { href, Link, NavLink, useFetcher, Form } from "react-router";
+import { supabase } from "../lib/supabase.js";
 
 /**
  * Sidebar Components
@@ -107,7 +108,7 @@ function ChatThreadItem({ thread }) {
  */
 function ChatThreadsList({ threads = [] }) {
   // LOCAL STATE: Managing search input value (controlled component)
-  const [searchValue, setSearchValue] = React.useState("");
+  const [searchValue, setSearchValue] = useState("");
 
   // EVENT HANDLER: Update search value as user types
   const handleSearchChange = (event) => {
@@ -146,22 +147,53 @@ function ChatThreadsList({ threads = [] }) {
 /**
  * SidebarFooter Component
  *
- * Handles the user profile section at the bottom of the sidebar.
- * Demonstrates component modularity and independence.
+ * Displays the current user's email and provides logout functionality.
+ * Key concepts:
+ * 1. SUPABASE SESSION: Get current user from Supabase Auth
+ * 2. USEEFFECT HOOK: Fetch user data when component mounts
+ * 3. LOCAL STATE: Store user email in component state
+ * 4. FORM COMPONENT: Submit to parent route's action
+ * 5. INTENT PATTERN: Use "intent" field to specify action
  */
 function SidebarFooter() {
+  const [userEmail, setUserEmail] = useState(null);
+
+  // Fetch the current user's session on mount
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserEmail(session.user.email);
+      }
+    };
+    getUser();
+  }, []);
+
   return (
     <div className="sidebar-footer">
-      <a href="/profile" className="user-profile">
+      <div className="user-profile">
         <img
-          src="https://ui-avatars.com/api/?name=Batman&background=0D0D0D&color=fff&size=40"
+          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userEmail || "User")}&background=0D0D0D&color=fff&size=40`}
           alt="User avatar"
           className="user-avatar"
           width={30}
           height={30}
         />
-        <span className="user-name">Batman</span>
-      </a>
+        <span className="user-name">{userEmail || "Loading..."}</span>
+      </div>
+      <Form method="post">
+        <button
+          type="submit"
+          name="intent"
+          value="logout"
+          className="logout-btn"
+          title="Log out"
+        >
+          ×
+        </button>
+      </Form>
     </div>
   );
 }

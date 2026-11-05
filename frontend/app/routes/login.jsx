@@ -67,12 +67,8 @@ export async function clientAction({ request }) {
   console.log("Login successful! User:", data.user.email);
   console.log("JWT token has been stored in localStorage");
 
-  // Check if there's a redirect parameter (where user was before being logged out)
-  const url = new URL(request.url);
-  const redirectTo = url.searchParams.get("redirect") || "/";
-
-  // Redirect back to where they came from, or home page
-  return redirect(redirectTo);
+  // Redirect to home page
+  return redirect("/");
 }
 
 /**
@@ -83,10 +79,9 @@ export default function Login() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
-  // Check URL parameters
+  // Check if user was redirected here after successful registration
   const [searchParams] = useSearchParams();
   const justRegistered = searchParams.get("registered") === "true";
-  const wasRedirected = searchParams.has("redirect");
 
   return (
     <div className="auth-container">
@@ -97,12 +92,6 @@ export default function Login() {
         {justRegistered && (
           <div className="success-message">
             Account created successfully! Please log in.
-          </div>
-        )}
-
-        {wasRedirected && (
-          <div className="info-message">
-            Your session has expired. Please log in again.
           </div>
         )}
 

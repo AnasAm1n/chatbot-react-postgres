@@ -132,6 +132,69 @@ Fetches all messages for a specific thread, ordered chronologically (oldest firs
 
 **Note:** Returns an empty array `[]` if the thread has no messages.
 
+### POST /api/threads
+
+Creates a new thread with an initial message. This is a compound operation that creates both the thread and its first message in a single request.
+
+**Request Body:**
+
+```json
+{
+  "title": "Thread title",
+  "content": "First message content"
+}
+```
+
+**Request Body Fields:**
+
+- `title` (required) - The thread title (cannot be empty)
+- `content` (required) - The initial message text (cannot be empty)
+
+**Response (201 Created):**
+
+```json
+{
+  "thread": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "title": "Thread title",
+    "created_at": "2025-10-13T10:30:00Z"
+  },
+  "message": {
+    "id": "789e4567-e89b-12d3-a456-426614174000",
+    "thread_id": "123e4567-e89b-12d3-a456-426614174000",
+    "type": "user",
+    "content": "First message content",
+    "created_at": "2025-10-13T10:30:00Z"
+  }
+}
+```
+
+**Response (400 Bad Request):**
+
+```json
+{
+  "error": "Both 'title' and 'content' are required"
+}
+```
+
+or
+
+```json
+{
+  "error": "Title cannot be empty"
+}
+```
+
+or
+
+```json
+{
+  "error": "Content cannot be empty"
+}
+```
+
+**Note:** This endpoint performs two database operations: it creates the thread first, then creates the initial message. Both operations are done in sequence within the same request to ensure consistency.
+
 ### POST /api/threads/:id/messages
 
 Creates a new message in a thread.
@@ -190,19 +253,49 @@ or
 }
 ```
 
-### DELETE /api/threads/:id
+### PATCH /api/threads/:id
 
-Permanently deletes a thread. The database's `ON DELETE CASCADE` constraint also deletes all messages associated with the thread. This is a hard delete, and the data cannot be recovered.
+Updates a thread's title. This is a partial update - only the title field is modified.
 
 **URL Parameters:**
 
-- `id` - The UUID of the thread
+- `id` - The UUID of the thread to update
+
+**Request Body:**
+
+```json
+{
+  "title": "Updated thread title"
+}
+```
+
+**Request Body Fields:**
+
+- `title` (required) - The new thread title (cannot be empty)
 
 **Response (200 OK):**
 
 ```json
 {
-  "message": "Thread deleted successfully"
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "Updated thread title",
+  "created_at": "2025-10-13T10:30:00Z"
+}
+```
+
+**Response (400 Bad Request):**
+
+```json
+{
+  "error": "Title is required"
+}
+```
+
+or
+
+```json
+{
+  "error": "Title cannot be empty"
 }
 ```
 
@@ -214,13 +307,34 @@ Permanently deletes a thread. The database's `ON DELETE CASCADE` constraint also
 }
 ```
 
-**Response (500 Internal Server Error):**
+**Note:** This endpoint uses PATCH (not PUT) because it only updates specific fields rather than replacing the entire resource. Other fields like `created_at` remain unchanged.
+
+### DELETE /api/threads/:id
+
+Deletes a thread and all its associated messages. The database CASCADE constraint automatically removes all messages when a thread is deleted.
+
+**URL Parameters:**
+
+- `id` - The UUID of the thread to delete
+
+**Response (200 OK):**
 
 ```json
 {
-  "error": "Failed to delete thread"
+  "message": "Thread deleted successfully",
+  "deletedId": "123e4567-e89b-12d3-a456-426614174000"
 }
 ```
+
+**Response (404 Not Found):**
+
+```json
+{
+  "error": "Thread not found"
+}
+```
+
+**Note:** This is a destructive operation that cannot be undone. All messages in the thread will be permanently deleted due to the `ON DELETE CASCADE` constraint in the database schema.
 
 ## Testing
 
@@ -239,6 +353,21 @@ curl http://localhost:3000/api/threads/123e4567-e89b-12d3-a456-426614174000
 # Get messages for a thread
 curl http://localhost:3000/api/threads/123e4567-e89b-12d3-a456-426614174000/messages
 
+# Create a new thread with initial message (POST request)
+curl -X POST http://localhost:3000/api/threads \
+  -H "Content-Type: application/json" \
+  -d '{"title":"My new thread","content":"This is the first message"}'
+
+# Test validation - missing content (should return 400)
+curl -X POST http://localhost:3000/api/threads \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Thread without message"}'
+
+# Test validation - empty title (should return 400)
+curl -X POST http://localhost:3000/api/threads \
+  -H "Content-Type: application/json" \
+  -d '{"title":"   ","content":"Message with empty title"}'
+
 # Create a new message (POST request)
 curl -X POST http://localhost:3000/api/threads/123e4567-e89b-12d3-a456-426614174000/messages \
   -H "Content-Type: application/json" \
@@ -254,10 +383,10 @@ curl -X POST http://localhost:3000/api/threads/123e4567-e89b-12d3-a456-426614174
   -H "Content-Type: application/json" \
   -d '{"type":"admin","content":"This should fail"}'
 
-# Permanently delete a thread and its messages (replace with an actual UUID)
+# Delete a thread (DELETE request)
 curl -X DELETE http://localhost:3000/api/threads/123e4567-e89b-12d3-a456-426614174000
 
-# Test the not-found response safely with a UUID that should not exist
+# Test deleting a non-existent thread (should return 404)
 curl -X DELETE http://localhost:3000/api/threads/00000000-0000-0000-0000-000000000000
 ```
 
@@ -271,6 +400,7 @@ GET endpoints can be tested in the browser:
 - `http://localhost:3000/api/threads/{id}/messages` - Shows messages for a specific thread
 
 POST endpoints require a tool like:
+
 - curl (see examples above)
 - Postman
 - Thunder Client (VS Code extension)

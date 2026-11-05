@@ -4,8 +4,10 @@ import {
   Link,
   useRouteError,
   href,
+  Outlet,
 } from "react-router";
 import { ChatMessages, ChatInput } from "../components/Chat.jsx";
+import { apiFetch } from "../lib/apiFetch.js";
 
 /**
  * ERROR BOUNDARY COMPONENT
@@ -48,18 +50,14 @@ export function ErrorBoundary() {
 /**
  * CLIENT LOADER FUNCTION
  *
- * Fetches thread details and messages from Supabase.
+ * Fetches thread details and messages from our custom API.
  * Key concepts:
  * 1. ASYNC FUNCTION: Can perform asynchronous operations like data fetching
  * 2. PARAMS ACCESS: Receives route parameters (like threadId) via the params object
  * 3. MULTIPLE API CALLS: Fetches both thread metadata and messages
-<<<<<<< Updated upstream
  * 4. SERVER-SIDE FILTERING: Our API handles filtering and sorting
  * 5. ERROR HANDLING: Properly handle 404 and other errors
-=======
- * 4. FILTERING: Uses Supabase query parameters to filter by thread_id
- * 5. ORDERING: Sorts messages by creation time for chronological display
->>>>>>> Stashed changes
+ * 6. AUTHENTICATED REQUESTS: Uses apiFetch to include JWT token
  *
  * The loader runs:
  * - When you navigate to this route
@@ -67,63 +65,28 @@ export function ErrorBoundary() {
  * - When React Router revalidates data
  */
 export async function clientLoader({ params }) {
-<<<<<<< Updated upstream
-  const apiUrl = import.meta.env.VITE_API_URL;
+  // Fetch thread metadata from our API with authentication
+  // apiFetch handles the base URL and adds the JWT token
+  const threadResponse = await apiFetch(`/api/threads/${params.threadId}`);
 
-  // Fetch thread metadata from our API
-  // Our API returns a single object (not an array) for found threads
-  const threadUrl = `${apiUrl}/api/threads/${params.threadId}`;
+  // Check for 404 specifically - thread doesn't exist
+  if (threadResponse.status === 404) {
+    throw new Response("Thread not found", { status: 404 });
+  }
 
-  const threadResponse = await fetch(threadUrl);
-=======
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
->>>>>>> Stashed changes
-
-  // Fetch thread metadata
-  // - id=eq.{threadId}: Filter to get only this specific thread
-  // - select=*: Get all columns
-  const threadUrl = `${supabaseUrl}/rest/v1/threads?id=eq.${params.threadId}&select=*`;
-
-  const threadResponse = await fetch(threadUrl, {
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-    },
-  });
-
+  // Check for other errors
   if (!threadResponse.ok) {
     throw new Error(`Failed to fetch thread: ${threadResponse.status}`);
   }
 
-  // Supabase returns an array, even for single results
-  const threadData = await threadResponse.json();
-  const thread = threadData[0];
+  // Our API returns the thread object directly (not in an array)
+  const thread = await threadResponse.json();
 
-<<<<<<< Updated upstream
-  // Fetch messages for this thread
+  // Fetch messages for this thread with authentication
   // Our API handles filtering by thread_id and sorting chronologically
-  const messagesUrl = `${apiUrl}/api/threads/${params.threadId}/messages`;
-
-  const messagesResponse = await fetch(messagesUrl);
-=======
-  // If thread not found, throw error (will be caught by ErrorBoundary)
-  if (!thread) {
-    throw new Response("Thread not found", { status: 404 });
-  }
-
-  // Fetch messages for this thread
-  // - thread_id=eq.{threadId}: Filter messages by thread
-  // - order=created_at.asc: Sort oldest to newest (chronological)
-  const messagesUrl = `${supabaseUrl}/rest/v1/messages?thread_id=eq.${params.threadId}&select=*&order=created_at.asc`;
-
-  const messagesResponse = await fetch(messagesUrl, {
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-    },
-  });
->>>>>>> Stashed changes
+  const messagesResponse = await apiFetch(
+    `/api/threads/${params.threadId}/messages`,
+  );
 
   if (!messagesResponse.ok) {
     throw new Error(`Failed to fetch messages: ${messagesResponse.status}`);
@@ -140,72 +103,55 @@ export async function clientLoader({ params }) {
 /**
  * CLIENT ACTION FUNCTION
  *
- * Handles form submissions to create new messages.
+ * Handles form submissions to create new messages using our custom API.
  * Key concepts:
  * 1. FORM DATA: Extract data from form submission
- * 2. POST REQUEST: Send data to Supabase to create new message
+ * 2. POST REQUEST: Send data to our API to create new message
  * 3. AUTOMATIC REVALIDATION: React Router re-runs loader after action completes
-<<<<<<< Updated upstream
  * 4. SERVER-SIDE VALIDATION: Our API validates the data
-=======
- * 4. OPTIMISTIC UI: Form clears immediately, data refreshes automatically
->>>>>>> Stashed changes
+ * 5. AUTHENTICATED REQUESTS: Uses apiFetch to include JWT token
  *
  * The action runs:
  * - When a Form with method="post" is submitted
  * - Before the loader re-runs (automatic revalidation)
  */
 export async function clientAction({ params, request }) {
-<<<<<<< Updated upstream
-  const apiUrl = import.meta.env.VITE_API_URL;
-=======
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
->>>>>>> Stashed changes
-
   // Extract form data from the request
   const formData = await request.formData();
   const content = formData.get("message");
 
-  // Validate message content
+  // Basic client-side validation (server will validate too)
   if (!content || !content.trim()) {
     return { error: "Message cannot be empty" };
   }
 
   // Create the message object
   const newMessage = {
-    thread_id: params.threadId,
     type: "user",
     content: content.trim(),
   };
 
-<<<<<<< Updated upstream
-  // POST to our custom API to create the message
+  // POST to our custom API to create the message with authentication
+  // apiFetch automatically includes the JWT token and handles the base URL
   try {
-    const response = await fetch(
-      `${apiUrl}/api/threads/${params.threadId}/messages`,
+    const response = await apiFetch(
+      `/api/threads/${params.threadId}/messages`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(newMessage),
-      }
-    );
-=======
-  // POST to Supabase to create the message
-  try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/messages`, {
-      method: "POST",
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify(newMessage),
-    });
->>>>>>> Stashed changes
+    );
 
+    // Check for validation errors (400)
+    if (response.status === 400) {
+      const error = await response.json();
+      return { error: error.error || "Invalid message data" };
+    }
+
+    // Check for other errors
     if (!response.ok) {
       return { error: `Failed to create message: ${response.status}` };
     }
@@ -221,13 +167,21 @@ export async function clientAction({ params, request }) {
  * Chat Thread Route Component
  *
  * Displays a conversation thread with messages from the database.
- * Now includes error handling from form submissions.
+ * Now includes nested routing for editing thread title.
  *
  * Key concepts:
  * 1. useLoaderData() HOOK: Accesses data returned from clientLoader
  * 2. useActionData() HOOK: Accesses result returned from clientAction
- * 3. ERROR DISPLAY: Shows validation or API errors to the user
- * 4. USER FEEDBACK: Informs users when something goes wrong
+ * 3. NESTED ROUTES: Outlet component renders child routes
+ * 4. LINK NAVIGATION: Link to="edit" navigates to nested edit route
+ * 5. ERROR DISPLAY: Shows validation or API errors to the user
+ *
+ * Routing Structure:
+ * - /chat/:threadId → This component (view thread)
+ * - /chat/:threadId/edit → Edit form overlay (child route)
+ *
+ * The Outlet component renders the child route above the thread view,
+ * creating an overlay effect for the edit form.
  */
 export default function ChatThread() {
   // Access the thread and messages data from the loader
@@ -238,8 +192,12 @@ export default function ChatThread() {
 
   return (
     <main className="chat-container">
+      <Outlet />
       <div className="chat-thread-header">
         <h2>{thread.title}</h2>
+        <Link to="edit" className="thread-title-edit-link">
+          Edit
+        </Link>
       </div>
       <ChatMessages messages={messages} />
       <ChatInput />
