@@ -49,11 +49,12 @@ app.get("/", (req, res) => {
  * - Status codes: 200 for success, 500 for server errors
  * - JSON response: Return data in a format the frontend can use
  */
-app.get("/api/threads", async (req, res) => {
+app.get("/api/threads", requireAuth, async (req, res) => {
+  const user_id = req.user_id
   try {
     // Execute SQL query using the sql`` tagged template
     const threads = await sql`
-      SELECT id, title, created_at 
+      SELECT id, title, created_at, ${user_id}
       FROM threads 
       ORDER BY created_at DESC
     `;
@@ -92,7 +93,7 @@ app.get("/api/threads", async (req, res) => {
  * - Tagged template (sql``) prevents SQL injection
  * - Even with user input, the query is safe from malicious SQL
  */
-app.get("/api/threads/:id", async (req, res) => {
+app.get("/api/threads/:id", requireAuth, async (req, res) => {
   try {
     // Extract the thread ID from the URL
     // For /api/threads/123, req.params.id will be "123"
@@ -101,9 +102,9 @@ app.get("/api/threads/:id", async (req, res) => {
     // Execute SQL query with WHERE clause
     // The ${threadId} is safely parameterized by the postgres library
     const threads = await sql`
-      SELECT id, title, created_at 
+      SELECT id, title, created_at, user_id
       FROM threads 
-      WHERE id = ${threadId}
+      WHERE id = ${threadId} AND user_id = ${req.user_id}
     `;
 
     // Check if thread was found
@@ -139,7 +140,7 @@ app.get("/api/threads/:id", async (req, res) => {
  * - RESTful routing: /resource/:id/sub-resource pattern
  * - Chronological ordering: Natural order for chat messages
  */
-app.get("/api/threads/:id/messages", async (req, res) => {
+app.get("/api/threads/:id/messages", requireAuth, async (req, res) => {
   try {
     const threadId = req.params.id;
 
@@ -255,7 +256,7 @@ app.post("/api/threads/:id/messages", async (req, res) => {
  * a message). An alternative would be separate endpoints, but that would
  * require two HTTP requests and expose an inconsistent state.
  */
-app.post("/api/threads", async (req, res) => {
+app.post("/api/threads", requireAuth, async (req, res) => {
   try {
     const { title, content } = req.body;
 
@@ -337,7 +338,7 @@ app.post("/api/threads", async (req, res) => {
  * We use PATCH because we're only updating the title field. If we were
  * replacing the entire thread resource, we would use PUT instead.
  */
-app.patch("/api/threads/:id", async (req, res) => {
+app.patch("/api/threads/:id", requireAuth, async (req, res) => {
   try {
     // Extract the thread ID from the URL parameters
     const threadId = req.params.id;
@@ -388,7 +389,7 @@ app.patch("/api/threads/:id", async (req, res) => {
 
 // ========== DELETE an existing thread ========== //
 // DELETE /api/threads/:id - Delete a thread by ID
-app.delete("/api/threads/:id", async (req, res) => {
+app.delete("/api/threads/:id", requireAuth, async (req, res) => {
   try {
     // Extract the thread ID from the URL parameters
     const threadId = req.params.id;
@@ -398,7 +399,7 @@ app.delete("/api/threads/:id", async (req, res) => {
     // because of the ON DELETE CASCADE constraint on the messages table
     const result = await sql`
       DELETE FROM threads
-      WHERE id = ${threadId}
+      WHERE id = ${threadId} AND user_id = ${req.user_id}
       RETURNING id
     `;
 
