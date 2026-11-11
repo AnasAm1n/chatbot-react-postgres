@@ -18,8 +18,6 @@ Edit `backend/.env` and add your Supabase database connection string:
 
 ```env
 DATABASE_URL=postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
-SUPABASE_URL=https://[YOUR-PROJECT-REF].supabase.co
-SUPABASE_ANON_KEY=[YOUR-SUPABASE-ANON-KEY]
 PORT=3000
 ```
 
@@ -29,8 +27,6 @@ To find your DATABASE_URL:
 2. Click the **Connect** button in the header
 3. Under **Connection String** > **URI**, copy the connection string listed under **Transaction pooler**.
 4. Replace `[YOUR-PASSWORD]` with your database password
-
-Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` to the same project URL and anon key used in `frontend/.env` (`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, without the `VITE_` prefix). Keep both `.env` files local and do not commit them.
 
 ### 3. Start the Server
 
